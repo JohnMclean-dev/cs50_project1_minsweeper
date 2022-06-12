@@ -237,9 +237,6 @@ class MinesweeperAI():
                     new_count = abs(knowledge1.count - knowledge.count)
                     new_knowledge = Sentence(new_cells, new_count)
                     self.knowledge.append(new_knowledge)
-        
-        for knowledge in self.knowledge:
-            print(knowledge)
 
     def make_safe_move(self):
         """
@@ -251,7 +248,7 @@ class MinesweeperAI():
         and self.moves_made, but should not modify any of those values.
         """
 
-        moves = list(self.safes - self.mines)
+        moves = list(self.safes - self.moves_made - self.mines)
 
         if moves:
             move = moves[0]

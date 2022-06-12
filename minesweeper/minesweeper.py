@@ -1,6 +1,6 @@
 import itertools
+from multiprocessing import Condition
 import random
-
 
 class Minesweeper():
     """
@@ -188,7 +188,7 @@ class MinesweeperAI():
 
         # 2 - mark the cell as safe
         self.safes.add(cell)
-
+        
         # 3 - add a new sentence to the AI's knowledge base
         moves = [
             (-1,-1),(-1, 0),(-1, 1),
@@ -206,7 +206,7 @@ class MinesweeperAI():
             validRow = 0 <= row <= self.height-1
             validCol = 0 <= col <= self.width-1
 
-            if validRow and validCol: # and not any (move in i for i in [self.moves_made, self.mines, self.safes]):
+            if validRow and validCol:
                 validMoves.add(move)
 
         knowledge = Sentence(validMoves, count)
@@ -215,22 +215,31 @@ class MinesweeperAI():
         del knowledge, validMoves
 
         # 4 - mark any additional cells as safe or as mines
+
+        for knowledge in self.knowledge:
+            if knowledge.count == 0:
+                for cell in knowledge.cells:
+                    self.safes.add(cell)
+            elif knowledge.count == len(knowledge.cells):
+                for cell in knowledge.cells:
+                    self.mines.add(cell)
+        
+        for mine in self.mines:
+            if mine in self.safes:
+                return 'ERROR, revisit 4 of add_knowledge'
+
+        # 5 - add any new sentences to the AI's knowledge base
+        
         for knowledge1 in self.knowledge:
             for knowledge2 in self.knowledge:
-                print(knowledge1.cells, knowledge2.cells)
-                '''
-                if knowledge1 != knowledge2:
-                    newCells = knowledge1.cells - knowledge2.cells
-                    newCount = abs(knowledge1.count - knowledge2.count)
-                    if newCells:
-                        newKnowledge = Sentence(newCells, newCount)
-                        self.knowledge.append(newKnowledge)
-                '''
+                if knowledge1.cells < knowledge2.cells:
+                    new_cells = knowledge1.cells - knowledge.cells
+                    new_count = abs(knowledge1.count - knowledge.count)
+                    new_knowledge = Sentence(new_cells, new_count)
+                    self.knowledge.append(new_knowledge)
+        
         for knowledge in self.knowledge:
-            print(knowledge.__str__())
-
-
-        ##raise NotImplementedError
+            print(knowledge)
 
     def make_safe_move(self):
         """
@@ -241,7 +250,13 @@ class MinesweeperAI():
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        raise NotImplementedError
+
+        moves = list(self.safes - self.mines)
+
+        if moves:
+            move = moves[0]
+            return move
+
 
     def make_random_move(self):
         """
@@ -250,4 +265,10 @@ class MinesweeperAI():
             1) have not already been chosen, and
             2) are not known to be mines
         """
-        raise NotImplementedError
+        
+        condition = True
+
+        while condition:
+            cell = random.randint(0,self.height-1), random.randint(0,self.width-1)
+            if not cell in self.moves_made and not cell in self.mines:
+                return cell
